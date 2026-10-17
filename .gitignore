@@ -1,0 +1,8 @@
+# Original 1 A.M. game files: copyrighted, never commit or publish
+original-demo/
+.build/
+.swiftpm/
+# Generated locally from your own original-demo files by tools/export_original.py
+local-original/
+levels/original-*.json
+__pycache__/
