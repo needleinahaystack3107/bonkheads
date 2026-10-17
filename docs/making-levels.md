@@ -138,6 +138,23 @@ level exactly as written, add:
 "scaling": false
 ```
 
+## Tutorial captions (optional)
+
+A level can coach the player. Each key is a game event, and its text shows
+in a caption at the bottom of the screen the first time that event happens:
+
+```json
+"tutorial": {
+  "start": "Shown when the level begins.",
+  "bump": "…", "flip": "…", "kick": "…", "recover": "…", "hit": "…", "gem": "…", "spring": "…"
+}
+```
+
+`recover` fires when a flipped pest gets back up, and `hit` when a player is
+hurt. Levels with captions are listed under **How to Play** in the main menu,
+don't count toward the difficulty progression, and are skipped by
+1 Player / 2 Players. See `levels/00-how-to-play.json`.
+
 ## Pipes (optional)
 
 Where pests appear, as `[column, row]` (0-based). A pest stands on top of the

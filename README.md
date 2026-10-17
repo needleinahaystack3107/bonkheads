@@ -51,6 +51,12 @@ swift build -c release
 
 same keys as the original. yes, S is jump for player 2. it was like that back then too.
 
+**how to actually win a level** (took me a minute to remember lol): jump into the
+platform *under* a pest to flip it onto its back, then run into it while it's flipped to
+kick it off the screen. you have about 5 seconds before it gets back up angrier and
+faster. kick every pest and the level's done. touching a pest that's standing up costs
+a life. first time? pick **How to Play** in the main menu for a guided level.
+
 there's a proper main menu with level select (pick 1 or 2 players with ← →), Esc pauses,
 M toggles the music and ⌘Q quits. no double jump btw: you climb mario-bros style, by
 jumping up through the gaps between platforms. each level is a bit tougher than the

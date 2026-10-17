@@ -40,6 +40,8 @@ final class GameScene: SKScene {
     private var tileNodes: [Int: SKSpriteNode] = [:]
     private var actorNodes: [String: WrappedSprite] = [:]
     private var scoreLabels: [SKLabelNode] = []
+    private let caption = SKNode()           // tutorial coaching text
+    private var shownTips = Set<String>()
 
     private let trollTextures = [Art.troll(skin: 0x8BD46B, hair: 0xFF5A5A, shirt: 0x3E7BD9),
                                  Art.troll(skin: 0xE8B27C, hair: 0xB06CFF, shirt: 0xF0A030)]
@@ -68,6 +70,8 @@ final class GameScene: SKScene {
         world.addChild(vignette)
         apply(theme: .cave)
         hud.zPosition = 10
+        caption.zPosition = 15
+        addChild(caption)
         overlay.zPosition = 20
         world.addChild(tileLayer)
         world.addChild(actorLayer)
@@ -119,7 +123,7 @@ final class GameScene: SKScene {
     private func load(level index: Int, carryOver: [Player]?) {
         levelIndex = index
         let level = levels[index]
-        game = Game(level: level, playerCount: playerCount, carryOver: carryOver, difficulty: Difficulty(step: index))
+        game = Game(level: level, playerCount: playerCount, carryOver: carryOver, difficulty: difficulty(at: index))
         apply(theme: Theme.resolve(level.theme, physics: level.physics))
         rebuildTiles()
         actorNodes.values.forEach { $0.removeFromParent() }
@@ -128,6 +132,15 @@ final class GameScene: SKScene {
         closeMenu()
         mode = .playing
         banner("Level \(index + 1): \(level.name)", sub: level.hint, seconds: 2.5)
+        shownTips.removeAll()
+        caption.removeAllChildren()
+        coach("start")
+    }
+
+    /// Progression counts only levels that scale, so a tutorial or an
+    /// original level in the list doesn't make the next one harder.
+    private func difficulty(at index: Int) -> Difficulty {
+        Difficulty(step: levels[..<index].filter(\.scales).count)
     }
 
     // MARK: - Menus
@@ -148,11 +161,21 @@ final class GameScene: SKScene {
 
     private func clearPlayfield() {
         game = nil
+        caption.removeAllChildren()
         tileLayer.removeAllChildren(); tileNodes.removeAll(); shadowLayer.removeAllChildren()
         actorNodes.values.forEach { $0.removeFromParent() }; actorNodes.removeAll()
         hud.removeAllChildren()
         overlay.removeAllChildren()
         activeMenu = nil
+    }
+
+    /// Tutorial levels (those with captions) are reached from "How to Play";
+    /// 1/2 Players start at the first real level.
+    private var firstGameLevel: Int { levels.firstIndex { $0.tutorial.isEmpty } ?? 0 }
+
+    private var tutorialItem: [MenuNode.Item] {
+        guard let i = levels.firstIndex(where: { !$0.tutorial.isEmpty }) else { return [] }
+        return [.init("How to Play", detail: "guided level") { [unowned self] in start(players: 1, at: i) }]
     }
 
     func showMainMenu() {
@@ -164,9 +187,9 @@ final class GameScene: SKScene {
         present(MenuNode(
             title: "BONKHEADS",
             subtitle: subtitle,
-            items: [
-                .init("1 Player") { [unowned self] in start(players: 1) },
-                .init("2 Players") { [unowned self] in start(players: 2) },
+            items: tutorialItem + [
+                .init("1 Player") { [unowned self] in start(players: 1, at: firstGameLevel) },
+                .init("2 Players") { [unowned self] in start(players: 2, at: firstGameLevel) },
                 .init("Select Level", detail: "\(levels.count) levels") { [unowned self] in showLevelSelect() },
                 .init("Quit") { [unowned self] in quit() },
             ],
@@ -180,7 +203,7 @@ final class GameScene: SKScene {
                   action: { players = players == 1 ? 2 : 1 }),
         ]
         items += levels.enumerated().map { i, level in
-            let harder = level.scales ? Difficulty(step: i).label : "as original"
+            let harder = level.scales ? difficulty(at: i).label : (level.tutorial.isEmpty ? "as original" : "tutorial")
             let detail = "\(level.spawns.count) pests" + (level.boss != nil ? " + boss" : "") + (harder.isEmpty ? "" : " · \(harder)")
             return MenuNode.Item("\(i + 1). \(level.name)", detail: detail) { [unowned self] in
                 start(players: players, at: i)
@@ -286,6 +309,7 @@ final class GameScene: SKScene {
     /// Turns simulation events into particles, shake, squash and score popups.
     private func handle(_ events: [GameEvent]) {
         guard let game else { return }
+        events.compactMap(tipKey).forEach(coach)
         func at(_ x: Int, _ y: Int) -> CGPoint { CGPoint(x: x, y: Units.screenH - y) }
         for e in events {
             switch e {
@@ -305,6 +329,9 @@ final class GameScene: SKScene {
                 popup("+500", x: x, y: y)
                 sound?.play("gem")
                 effects.burst(at: at(x, y), color: Art.color(0x7CF7FF), count: 18, speed: 140, shape: .star)
+            case .recover(let x, let y):
+                popup("GRR!", x: x, y: y)
+                effects.burst(at: at(x, y), color: Art.color(0xFF5A5A), count: 8, speed: 80, scale: 0.5)
             case .bossHit:
                 sound?.play("rexHit")
             case .extraLife(let p):
@@ -328,6 +355,46 @@ final class GameScene: SKScene {
                               spread: 0.6, angle: .pi / 2, gravity: -60, scale: 0.35)
             }
         }
+    }
+
+    // MARK: - Tutorial captions
+
+    /// Which tutorial caption (if any) an event can trigger.
+    private func tipKey(_ e: GameEvent) -> String? {
+        switch e {
+        case .bump: "bump"
+        case .flip: "flip"
+        case .kick: "kick"
+        case .recover: "recover"
+        case .playerHit: "hit"
+        case .gem: "gem"
+        case .spring: "spring"
+        default: nil
+        }
+    }
+
+    /// Shows a level's caption for an event the first time it happens.
+    private func coach(_ key: String) {
+        guard let text = game?.level.tutorial[key], !shownTips.contains(key) else { return }
+        shownTips.insert(key)
+        caption.removeAllChildren()
+        let l = SKLabelNode(text: text)
+        l.fontName = "AvenirNext-DemiBold"
+        l.fontSize = 13
+        l.fontColor = .white
+        l.numberOfLines = 0
+        l.preferredMaxLayoutWidth = 590
+        l.verticalAlignmentMode = .center
+        let size = l.calculateAccumulatedFrame().size
+        let bg = SKShapeNode(rectOf: CGSize(width: 620, height: size.height + 14), cornerRadius: 10)
+        bg.fillColor = NSColor(white: 0, alpha: 0.7)
+        bg.strokeColor = Art.color(0xFFD23F, 0.7)
+        let node = SKNode()
+        node.addChild(bg)
+        node.addChild(l)
+        // Sit on the floor strip (bottom 4 rows), out of the way of the action.
+        node.position = CGPoint(x: CGFloat(Units.screenW) / 2, y: 32)
+        caption.addChild(node)
     }
 
     /// Eases squash/stretch back to 1 and returns (xScale, yScale) for an actor.

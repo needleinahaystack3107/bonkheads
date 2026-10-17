@@ -11,6 +11,7 @@ enum GameEvent {
     case bossHit
     case jump(player: Int)
     case land(player: Int)
+    case recover(x: Int, y: Int)     // a flipped pest got back up (angrier)
 }
 
 /// A floating gem released from a gem brick. Uses the shared Body physics.
@@ -170,7 +171,7 @@ final class Game {
             return
         }
         pest.steer(players: players, physics: physics)
-        pest.updateStun()
+        if pest.updateStun() { events.append(.recover(x: pest.body.centerX, y: pest.body.top)) }
         pest.body.applyGravity(physics)
         let moved = pest.body.move(in: grid, isPlayer: false, wraps: pest.behavior != .rex)
         if moved.hitWall { pest.direction = -pest.direction }

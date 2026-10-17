@@ -15,6 +15,7 @@ struct LevelFile: Decodable {
     var pests: [PestSpec]
     var boss: BossSpec?
     var pipes: PipeSpec?
+    var tutorial: [String: String]?   // event -> coaching caption (see making-levels.md)
     var scaling: Bool?          // false: play exactly as written (no campaign progression)
 
     struct PestSpec: Decodable { var kind: String; var at: Double; var from: String?; var speed: Int? }
@@ -71,6 +72,8 @@ struct Level {
     let name: String
     let hint: String?
     let scales: Bool
+    let tutorial: [String: String]
+    static let tutorialEvents: Set<String> = ["start", "bump", "flip", "kick", "recover", "hit", "gem", "spring"]
     let theme: String?   // visual only; resolved by the renderer
     let physics: Physics
     let grid: TileGrid
@@ -83,6 +86,10 @@ struct Level {
         name = file.name
         hint = file.hint
         scales = file.scaling ?? true
+        tutorial = file.tutorial ?? [:]
+        if let bad = tutorial.keys.first(where: { !Level.tutorialEvents.contains($0) }) {
+            throw LevelError("tutorial key \"\(bad)\" is not an event (use \(Level.tutorialEvents.sorted().joined(separator: ", ")))")
+        }
         theme = file.theme
         physics = file.physics?.value ?? .normal
 

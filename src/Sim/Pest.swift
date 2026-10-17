@@ -114,14 +114,15 @@ struct Pest {
         body.vx = abs(dx) > 8 ? (dx > 0 ? 64 : -64) : 0
     }
 
-    mutating func updateStun() {
-        guard flipped, behavior != .boss else { return }
+    /// Counts down the flip; returns true on the update it gets back up.
+    mutating func updateStun() -> Bool {
+        guard flipped, behavior != .boss else { return false }
         stunTimer += 1
-        if stunTimer >= stunTicks {
-            flipped = false
-            anger += 1
-            body.vy = -48
-        }
+        guard stunTimer >= stunTicks else { return false }
+        flipped = false
+        anger += 1
+        body.vy = -48
+        return true
     }
 
     mutating func kick(by player: Player, physics: Physics) {

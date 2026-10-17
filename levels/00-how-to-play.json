@@ -1,0 +1,63 @@
+{
+  "name": "How to Play",
+  "author": "Bonkheads rebuild",
+  "hint": "A short guided level. Follow the tips at the bottom of the screen.",
+  "theme": "meadow",
+  "physics": "normal",
+  "scaling": false,
+  "tiles": [
+    "....................",
+    "....................",
+    "....................",
+    "....................",
+    "....................",
+    "....................",
+    "....................",
+    "....................",
+    "....................",
+    "....................",
+    "....................",
+    "....................",
+    "....................",
+    "....................",
+    "....................",
+    "....................",
+    "....................",
+    "....................",
+    "....................",
+    "########....########",
+    "....................",
+    "....................",
+    "....................",
+    "....................",
+    "....................",
+    "....1..........2....",
+    "====================",
+    "====================",
+    "====================",
+    "===================="
+  ],
+  "pipes": {
+    "left": [
+      0,
+      18
+    ],
+    "right": [
+      19,
+      18
+    ]
+  },
+  "pests": [
+    { "kind": "bulldog", "at": 3, "from": "left", "speed": 10 },
+    { "kind": "bulldog", "at": 30, "from": "right", "speed": 10 },
+    { "kind": "bulldog", "at": 50, "from": "left", "speed": 12 }
+  ],
+  "tutorial": {
+    "start": "Walk ← →, jump ↑ (P2: A D, jump S). A bulldog is coming along the platform above you. Stand under it and jump to BONK the bricks under its feet!",
+    "bump": "Bonk! Hitting a brick from below flips whatever is standing on it.",
+    "flip": "It's flipped for ~5 seconds! Climb up and run into it to KICK it. Climb by jumping up through the middle gap, then steer onto the platform.",
+    "recover": "Too slow: it got back up, angrier and faster. Bonk it again, then kick it quicker!",
+    "kick": "KICKED! A kicked pest is gone for good. Flip and kick every pest to clear a level.",
+    "hit": "Ouch! Touching a pest that's standing up costs a life. Only flipped pests are safe to touch."
+  }
+}
