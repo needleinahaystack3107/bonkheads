@@ -40,6 +40,7 @@ final class GameScene: SKScene {
     private var tileNodes: [Int: SKSpriteNode] = [:]
     private var actorNodes: [String: WrappedSprite] = [:]
     private var scoreLabels: [SKLabelNode] = []
+    private var levelLabel: SKLabelNode?
     private let caption = SKNode()           // tutorial coaching text
     private var shownTips = Set<String>()
 
@@ -482,6 +483,7 @@ final class GameScene: SKScene {
             node.position = interpolated(pest.body, alpha)
             let shake: CGFloat = pest.isShaking ? CGFloat((game.tick % 2) * 2 - 1) * 1.5 : 0
             node.position.x += shake
+            showKickHint(on: node, visible: pest.flipped && !pest.dead, above: CGFloat(pest.body.h) / 2 + 16, tick: game.tick)
             if let tex = originalFrame(pest: pest, tick: game.tick) {
                 let h = tex.size().height
                 node.style(texture: tex, size: tex.size(), xScale: 1, offsetY: (h - CGFloat(pest.body.h)) / 2,
@@ -505,6 +507,8 @@ final class GameScene: SKScene {
             actorNodes[key] = nil
         }
 
+        let left = game.pestsLeft
+        levelLabel?.text = "Level \(levelIndex + 1) / \(levels.count)  ·  " + (left == 1 ? "1 pest left" : "\(left) pests left")
         for (i, label) in scoreLabels.enumerated() where i < game.players.count {
             let p = game.players[i]
             label.text = "P\(i + 1)  \(p.score)   " + String(repeating: "♥", count: max(p.lives, 0))
@@ -517,6 +521,26 @@ final class GameScene: SKScene {
         actorLayer.addChild(n)
         actorNodes[key] = n
         return n
+    }
+
+    /// A blinking "KICK!" over a flipped pest, so it's obvious it can be kicked now.
+    private func showKickHint(on node: WrappedSprite, visible: Bool, above: CGFloat, tick: Int) {
+        var hint = node.childNode(withName: "kick") as? SKLabelNode
+        if hint == nil && visible {
+            let l = label("KICK!", size: 15)
+            l.name = "kick"
+            l.fontColor = Art.color(0xFFD23F)
+            let shadow = label("KICK!", size: 15)
+            shadow.fontColor = NSColor(white: 0, alpha: 0.75)
+            shadow.position = CGPoint(x: 1.2, y: -1.2)
+            shadow.zPosition = -1
+            l.addChild(shadow)
+            l.zPosition = 5
+            node.addChild(l)
+            hint = l
+        }
+        hint?.isHidden = !visible || (tick / 4) % 3 == 0
+        hint?.position = CGPoint(x: 0, y: above)
     }
 
     /// Walk cycles advance with distance travelled (6 px per frame), like a real gait.
@@ -552,7 +576,8 @@ final class GameScene: SKScene {
 
     private func buildHUD() {
         hud.removeAllChildren()
-        let levelLabel = label("Level \(levelIndex + 1) / \(levels.count)", size: 13)
+        let levelLabel = label("", size: 13)
+        self.levelLabel = levelLabel
         levelLabel.position = CGPoint(x: CGFloat(Units.screenW) / 2, y: CGFloat(Units.screenH - 22))
         levelLabel.fontColor = NSColor(white: 1, alpha: 0.75)
         hud.addChild(levelLabel)

@@ -43,6 +43,10 @@ final class Game {
     var isCleared: Bool {
         nextSpawn == level.spawns.count && (level.boss == nil || bossSpawned) && pests.isEmpty
     }
+    /// Pests still to deal with: not yet spawned, plus alive (boss included).
+    var pestsLeft: Int {
+        (level.spawns.count - nextSpawn) + (level.boss != nil && !bossSpawned ? 1 : 0) + pests.filter { !$0.dead }.count
+    }
     var isOver: Bool { players.allSatisfy { $0.state == .out } }
 
     let difficulty: Difficulty
